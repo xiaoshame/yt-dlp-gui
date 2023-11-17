@@ -40,20 +40,20 @@ class UpdateThread(Thread):
 
     """
 
-    LATEST_YOUTUBE_DL = 'https://yt-dl.org/latest/'
+    LATEST_YOUTUBE_DL = 'https://github.com/yt-dlp/yt-dlp/releases/download/2023.11.16/yt-dlp.exe'
     DOWNLOAD_TIMEOUT = 10
 
     def __init__(self, download_path, quiet=False):
         super(UpdateThread, self).__init__()
-        self.download_path = download_path
+        self.download_path = os.path.dirname(download_path)
         self.quiet = quiet
         self.start()
 
     def run(self):
         self._talk_to_gui('download')
 
-        source_file = self.LATEST_YOUTUBE_DL + YOUTUBEDL_BIN
-        destination_file = os.path.join(self.download_path, YOUTUBEDL_BIN)
+        source_file = self.LATEST_YOUTUBE_DL
+        destination_file = self.download_path
 
         check_path(self.download_path)
 
@@ -89,4 +89,4 @@ class UpdateThread(Thread):
                 4) finish: The update thread is ready to join
 
         """
-        CallAfter(Publisher.sendMessage, UPDATE_PUB_TOPIC, (signal, data))
+        CallAfter(Publisher.sendMessage, UPDATE_PUB_TOPIC, msg=data))

@@ -52,15 +52,14 @@ class PipeReader(Thread):
 
         while self._running:
             if self._filedescriptor is not None:
-                value = iter(self._filedescriptor.readline, str(''))
-                print(value)
                 for line in iter(self._filedescriptor.readline, str('')):
-                    # Ignore ffmpeg stderr
-                    if str('ffmpeg version') in line.decode("utf-8"):
-                        ignore_line = True
+                    if self._filedescriptor is not None:
+                        # Ignore ffmpeg stderr
+                        if str('ffmpeg version') in line.decode("utf-8"):
+                            ignore_line = True
 
-                    if not ignore_line:
-                        self._queue.put_nowait(line)
+                        if not ignore_line:
+                            self._queue.put_nowait(line)
 
                 self._filedescriptor = None
                 ignore_line = False
@@ -70,6 +69,9 @@ class PipeReader(Thread):
     def attach_filedescriptor(self, filedesc):
         """Attach a filedescriptor to the PipeReader. """
         self._filedescriptor = filedesc
+
+    def detach_filedescriptor(self):
+        self._filedescriptor = None
 
     def join(self, timeout=None):
         self._running = False
@@ -163,7 +165,6 @@ class YoutubeDLDownloader(object):
 
         while self._proc_is_alive():
             stdout = self._proc.stdout.readline().rstrip()
-
             if stdout:
                 data_dict = extract_data(stdout)
                 self._extract_info(data_dict)
@@ -173,14 +174,13 @@ class YoutubeDLDownloader(object):
         # We don't need to read stderr in real time
         while not self._stderr_queue.empty():
             stderr = self._stderr_queue.get_nowait().rstrip()
-
-            self._log(stderr)
-
-            if self._is_warning(stderr):
-                self._set_returncode(self.WARNING)
-            else:
-                self._set_returncode(self.ERROR)
-
+            if isinstance(stderr, str):
+                self._log(stderr)
+                
+                if self._is_warning(stderr):
+                    self._set_returncode(self.WARNING)
+                else:
+                    self._set_returncode(self.ERROR)
         # Set return code to ERROR if we could not start the download process
         # or the childs return code is greater than zero
         # NOTE: In Linux if the called script is just empty Python exits
@@ -200,17 +200,11 @@ class YoutubeDLDownloader(object):
 
     def stop(self):
         """Stop the download process and set return code to STOPPED. """
-        if self._proc_is_alive():
-
+        if self._proc_is_alive() or self._proc is not None:
+            self._stderr_reader.detach_filedescriptor()
             if os.name == 'nt':
-                # os.killpg is not available on Windows
-                # See: https://bugs.python.org/issue5115
+                self._proc.terminate()
                 self._proc.kill()
-
-                # When we kill the child process on Windows the return code
-                # gets set to 1, so we want to reset the return code back to 0
-                # in order to avoid creating logging output in the download(...)
-                # method
                 self._proc.returncode = 0
             else:
                 os.killpg(self._proc.pid, signal.SIGKILL)
@@ -269,8 +263,9 @@ class YoutubeDLDownloader(object):
                 # Set self._return_code to already downloaded
                 # and trash that key
                 self._set_returncode(self.ALREADY)
-                data['status'] = None
-
+                # data['status'] = None
+            if data['status'] == 'Finished':
+                self._set_returncode(self.OK)
             if data['status'] == 'Filesize Abort':
                 # Set self._return_code to filesize abort
                 # and trash that key
@@ -286,12 +281,11 @@ class YoutubeDLDownloader(object):
         """Pass data back to the caller. """
         if self.data_hook is not None:
             self.data_hook(data)
-
+    
     def _proc_is_alive(self):
         """Returns True if self._proc is alive else False. """
         if self._proc is None:
             return False
-
         return self._proc.poll() is None
 
     def _get_cmd(self, url, options):
@@ -388,7 +382,6 @@ def extract_data(stdout):
     stdout = stdout.decode("utf-8").split()
 
     stdout[0] = stdout[0].lstrip('\r')
-
     if stdout[0] == '[download]':
         data_dictionary['status'] = 'Downloading'
 
@@ -414,7 +407,7 @@ def extract_data(stdout):
                 data_dictionary['eta'] = stdout[7]
 
         # Get playlist info
-        if stdout[1] == 'Downloading' and stdout[2] == 'video':
+        if stdout[1] == 'download' and stdout[2] == 'video':
             data_dictionary['playlist_index'] = stdout[3]
             data_dictionary['playlist_size'] = stdout[5]
 

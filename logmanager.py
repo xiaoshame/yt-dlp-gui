@@ -81,7 +81,7 @@ class LogManager(object):
             else:
                 msg = data
 
-            log.write(msg.encode(self._encoding, 'ignore'))
+            log.write(msg)
 
     def _init_log(self):
         """Initialize the log file if not exist. """

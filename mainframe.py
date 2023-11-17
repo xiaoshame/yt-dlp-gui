@@ -5,7 +5,6 @@
 
 from __future__ import unicode_literals
 
-import gettext
 import os
 
 import wx
@@ -26,6 +25,7 @@ from info import (
 )
 from optionsframe import LogGUI, OptionsFrame
 from parsers import OptionsParser
+from pubsub import pub as Publisher
 from updatemanager import UPDATE_PUB_TOPIC, UpdateThread
 from utils import (
     build_command,
@@ -39,7 +39,6 @@ from utils import (
 from version import __version__
 from widgets import CustomComboBox
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
-from pubsub import pub as Publisher
 
 
 class MainFrame(wx.Frame):
@@ -889,11 +888,11 @@ class MainFrame(wx.Frame):
             See downloadmanager.Worker _talk_to_gui() method.
 
         """
-        signal, data = msg.data
+        # signal, data = msg.data
 
-        download_item = self._download_list.get_item(data["index"])
-        download_item.update_stats(data)
-        row = self._download_list.index(data["index"])
+        download_item = self._download_list.get_item(msg["index"])
+        download_item.update_stats(msg)
+        row = self._download_list.index(msg["index"])
 
         self._status_list._update_from_item(row, download_item)
 
@@ -906,7 +905,7 @@ class MainFrame(wx.Frame):
             See downloadmanager.DownloadManager _talk_to_gui() method.
 
         """
-        data = msg.data
+        data = msg
 
         if data == 'finished':
             self._print_stats()

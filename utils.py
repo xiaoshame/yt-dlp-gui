@@ -27,7 +27,7 @@ from version import __version__
 _RANDOM_OBJECT = object()
 
 
-YOUTUBEDL_BIN = 'D:\\anaconda3\\Scripts\\yt-dlp'
+YOUTUBEDL_BIN = 'c:/Users/xiaozhisong/AppData/Roaming/yt-dlp'
 if os.name == 'nt':
     YOUTUBEDL_BIN += '.exe'
 

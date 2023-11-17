@@ -80,7 +80,7 @@ class DownloadItem(object):
     def __init__(self, url, options):
         self.url = url
         self.options = options
-        self.object_id = hash(url + to_string(options))
+        self.object_id = hash(url + to_string(options)) & 0x0FFFFFFF
 
         self.reset()
 
@@ -487,7 +487,7 @@ class DownloadManager(Thread):
                     downloads using the active() method.
 
         """
-        CallAfter(Publisher.sendMessage, MANAGER_PUB_TOPIC, data)
+        CallAfter(Publisher.sendMessage, MANAGER_PUB_TOPIC, msg = data)
 
     def _check_youtubedl(self):
         """Check if youtube-dl binary exists. If not try to download it. """
@@ -600,7 +600,7 @@ class Worker(Thread):
             time.sleep(self.WAIT_TIME)
 
         # Call the destructor function of YoutubeDLDownloader object
-        self._downloader.close()
+        # self._downloader.close()
 
     def download(self, url, options, object_id):
         """Download given item.
@@ -738,6 +738,6 @@ class Worker(Thread):
 
         if signal == 'receive':
             self._wait_for_reply = True
-
-        CallAfter(Publisher.sendMessage, WORKER_PUB_TOPIC, (signal, data))
+        
+        CallAfter(Publisher.sendMessage, WORKER_PUB_TOPIC, msg = data)
 

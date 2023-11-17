@@ -323,12 +323,10 @@ class OptionsManager(object):
         """Save options to settings file. """
         check_path(self.config_path)
 
-        with open(self.settings_file, 'wb') as settings_file:
+        with open(self.settings_file, "w", encoding="utf8") as settings_file:
             options = self._get_options()
             json.dump(options,
-                      settings_file,
-                      indent=4,
-                      separators=(',', ': '))
+                      settings_file)
 
     def _settings_are_valid(self, settings_dictionary):
         """Check settings.json dictionary.
