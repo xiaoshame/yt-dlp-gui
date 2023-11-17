@@ -1,20 +1,19 @@
-import wx
+import os
 
-class MyPanel(wx.Panel):
-    def __init__(self, parent):
-        super().__init__(parent)
-        
-        button = wx.Button(self, label="Click Me")
-        text = wx.TextCtrl(self)
-        
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(button, 0, wx.ALL, 10)
-        sizer.Add(text, 0, wx.ALL, 10)
-        self.SetSizer(sizer)
+def get_all_files(directory):
+    file_paths = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_paths.append(file_path)
+    return file_paths
 
-app = wx.App()
-frame = wx.Frame(None, title="Panel Example")
-panel = MyPanel(frame)
-frame.SetSize(300, 200)
-frame.Show()
-app.MainLoop()
+# 指定目录路径
+directory = "D:/workspace/youtube_dl_gui/data"
+
+# 获取目录及其子目录中的所有文件路径
+files = get_all_files(directory)
+
+# 打印所有文件路径
+for file in files:
+    print(file)

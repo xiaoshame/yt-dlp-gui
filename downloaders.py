@@ -378,8 +378,8 @@ def extract_data(stdout):
     # We want to keep the spaces in order to extract filenames with
     # multiple whitespaces correctly. We also keep a copy of the old
     # 'stdout' for backward compatibility with the old code
-    stdout_with_spaces = stdout.decode("utf-8").split(' ')
-    stdout = stdout.decode("utf-8").split()
+    stdout_with_spaces = stdout.decode("gbk").split(' ')
+    stdout = stdout.decode("gbk").split()
 
     stdout[0] = stdout[0].lstrip('\r')
     if stdout[0] == '[download]':

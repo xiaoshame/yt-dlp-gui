@@ -1,0 +1,62 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+
+a = Analysis(
+    ['__main__.py'],
+    pathex=['D\\workspace\\youtube_dl_gui'],
+    binaries=[('D:\\workspace\\youtube_dl_gui\\data\\exe\\yt-dlp.exe','exe')],
+    datas=[('D:\\workspace\\youtube_dl_gui\\data\\icons\\hicolor\\128x128\\apps\\youtube-dl-gui.png','data\\icons\\hicolor'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\icons\\hicolor\\16x16\\apps\\youtube-dl-gui.png','data\\icons\\hicolor'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\icons\\hicolor\\256x256\\apps\\youtube-dl-gui.png','data\\icons\\hicolor'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\icons\\hicolor\\32x32\\apps\\youtube-dl-gui.png','data\\icons\\hicolor'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\icons\\hicolor\\48x48\\apps\\youtube-dl-gui.png','data\\icons\\hicolor'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\icons\\hicolor\\64x64\\apps\\youtube-dl-gui.png','data\\icons\\hicolor'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\arrow_down_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\arrow_up_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\camera_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\cloud_download_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\delete_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\folder_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\icons-license','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\pause_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\play_arrow_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\reload_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\settings_20px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\stop_32px.png','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\youtube-dl-gui.ico','data\\pixmaps'),
+    ('D:\\workspace\\youtube_dl_gui\\data\\pixmaps\\youtube-dl-gui.png','data\\pixmaps')],
+    hiddenimports=[],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name='youtube_dl_gui',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='__main__',
+)

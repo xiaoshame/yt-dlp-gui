@@ -200,7 +200,7 @@ class MainFrame(wx.Frame):
         # label, event_handler
         settings_menu_data = (
             (self.OPTIONS_LABEL, self._on_options),
-            (self.UPDATE_LABEL, self._on_update),
+            # (self.UPDATE_LABEL, self._on_update),
             (self.VIEWLOG_LABEL, self._on_viewlog),
             (self.ABOUT_LABEL, self._on_about)
         )
@@ -934,13 +934,12 @@ class MainFrame(wx.Frame):
             See updatemanager.UpdateThread _talk_to_gui() method.
 
         """
-        data = msg.data
 
-        if data[0] == 'download':
+        if msg == 'download':
             self._status_bar_write(self.UPDATING_MSG)
-        elif data[0] == 'error':
-            self._status_bar_write(self.UPDATE_ERR_MSG.format(data[1]))
-        elif data[0] == 'correct':
+        elif msg== 'error':
+            self._status_bar_write(self.UPDATE_ERR_MSG.format(msg))
+        elif msg == 'correct':
             self._status_bar_write(self.UPDATE_SUCC_MSG)
         else:
             self._reset_widgets()

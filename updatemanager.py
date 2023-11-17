@@ -45,7 +45,7 @@ class UpdateThread(Thread):
 
     def __init__(self, download_path, quiet=False):
         super(UpdateThread, self).__init__()
-        self.download_path = os.path.dirname(download_path)
+        self.download_path = download_path
         self.quiet = quiet
         self.start()
 
@@ -55,7 +55,7 @@ class UpdateThread(Thread):
         source_file = self.LATEST_YOUTUBE_DL
         destination_file = self.download_path
 
-        check_path(self.download_path)
+        check_path(os.path.dirname(self.download_path))
 
         try:
             http = urllib3.PoolManager()
@@ -66,11 +66,11 @@ class UpdateThread(Thread):
 
             self._talk_to_gui('correct')
         except Exception as error:
-            self._talk_to_gui('error', error)
+            self._talk_to_gui(error,'error')
 
         if not self.quiet:
             self._talk_to_gui('finish')
-
+ 
     def _talk_to_gui(self, signal, data=None):
         """Communicate with the GUI using wxCallAfter and wxPublisher.
 
@@ -89,4 +89,4 @@ class UpdateThread(Thread):
                 4) finish: The update thread is ready to join
 
         """
-        CallAfter(Publisher.sendMessage, UPDATE_PUB_TOPIC, msg=data))
+        CallAfter(Publisher.sendMessage, UPDATE_PUB_TOPIC, msg=data)
