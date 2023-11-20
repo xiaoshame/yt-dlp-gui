@@ -23,10 +23,8 @@ import subprocess
 from info import __appname__
 from version import __version__
 
-
-_RANDOM_OBJECT = object()
-
-YOUTUBEDL_BIN = 'os.getcwd()'
+# YOUTUBEDL_BIN = 'D:/workspace/youtube_dl_gui/data/exe/yt-dlp.exe'
+YOUTUBEDL_BIN = os.getcwd()
 if os.name == 'nt':
     YOUTUBEDL_BIN += '/_internal/exe/yt-dlp.exe'
 

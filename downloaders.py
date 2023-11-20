@@ -10,13 +10,17 @@ for downloading the video files.
 
 from __future__ import unicode_literals
 
+import http.client
+import json
 import os
 import queue
 import signal
 import subprocess
+import time
 from threading import Thread
 from time import sleep
-
+from urllib.parse import urlparse
+import requests
 
 class PipeReader(Thread):
     """Helper class to avoid deadlocks when reading from subprocess pipes.
@@ -478,3 +482,122 @@ def extract_data(stdout):
         data_dictionary['status'] = 'Pre Processing'
 
     return data_dictionary
+ 
+class HaoKanDownloader(object):
+    '''文件下载器'''
+    OK = 0
+    WARNING = 1
+    ERROR = 2
+    FILESIZE_ABORT = 3
+    ALREADY = 4
+    STOPPED = 5
+ 
+    def __init__(self, data_hook, log_data):
+        '''初始化'''
+        self.data_hook = data_hook
+        self.log_data = log_data
+        self.data = {}
+        self._return_code = self.OK
+        self.url = None
+ 
+    def download(self,url, options):
+        filename,url = self.get_video_info(url)
+        self.download_video(url,filename,options)
+        return self._return_code
+    
+    def get_video_info(self,url):
+        self.data['status'] = 'Pre Download'
+        self._hook_data(self.data)
+        base_url = url
+        headers = {
+            "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+        }
+        try:
+            response = requests.get(url=base_url, headers=headers, timeout=5)
+            if response.status_code == 200:    
+                html = response.text
+                start = html.find("window.__PRELOADED_STATE__ = ")
+                end = html.find("}};", start)
+                json_str = html[start+len("window.__PRELOADED_STATE__ = "):end+2]
+                json_data = json.loads(json_str)
+                title= json_data['curVideoMeta']['title']
+                videoInfo = json_data['curVideoMeta']['clarityUrl']
+                url = ''
+                for item in videoInfo:
+                    if item['key'] == 'sc':
+                        url = item['url']
+                return title,url
+        except Exception as e:
+            return '',''
+    def download_video(self,url,filename,options):
+        conn = None
+        if(self.url == "" or filename == ""):
+            self.data['status'] = 'Error'
+            self._hook_data(self.data)
+            self._return_code = self.ERROR
+            return
+        self.url = urlparse(url)
+        if self.url.scheme == 'https':
+            conn = http.client.HTTPSConnection(self.url.netloc)
+        else:
+            conn = http.client.HTTPConnection(self.url.netloc)
+        conn.request('GET', self.url.path)
+        response = conn.getresponse()
+        if response.status == 200:
+            self.data['status'] = 'Downloading'
+            self._hook_data(self.data)
+            total_size = response.getheader('Content-Length')
+            file_type = response.getheader('Content-Type').split('/')
+            total_size = (int)(total_size)
+            if total_size > 0:
+                finished_size = 0
+                file_path = options[3] % {'title': filename, 'ext': file_type[1]}
+                start_time = time.perf_counter()
+                size = 0
+                file = open(file_path, 'wb')
+                if file:
+                    while not response.closed:
+                        buffers = response.read(1024)
+                        file.write(buffers)
+                        end_time = time.perf_counter()
+                        finished_size += len(buffers)
+                        if end_time - start_time > 1:
+                            percent = '{0:.1f}%'.format(finished_size / total_size * 100)
+                            speed = '{0:.1f}MB/s'.format(((finished_size - size) / (end_time - start_time))/1024/1024)
+                            self.data['speed'] = speed
+                            self.data['percent'] = percent
+                            self._hook_data(self.data)
+                            start_time = time.perf_counter()
+                            size = finished_size
+                        if finished_size >= total_size:
+                            break
+                    # ... end while statment
+                    file.close()
+                    self._return_code = self.ALREADY
+                else:
+                    self.data['status'] = 'Error'
+                    self._hook_data(self.data)
+                    self._return_code = self.ERROR
+                # ... end if statment
+            else:
+                self.data['status'] = 'Error'
+                self._hook_data(self.data)
+                self._return_code = self.ERROR
+            # ... end if statment
+        else:
+            self.data['status'] = 'Error'
+            self._hook_data(self.data)
+            self._return_code = self.ERROR
+        # ... end if statment
+        conn.close()
+        self.data['status'] = 'Already Downloaded'
+        self._hook_data(self.data)
+    
+    def _hook_data(self, data):
+        if self.data_hook is not None:
+            self.data_hook(data)
+
+    def _log(self, data):
+        """Log data using the callback function. """
+        if self.log_data is not None:
+            self.log_data(data)

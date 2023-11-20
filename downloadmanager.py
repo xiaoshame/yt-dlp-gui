@@ -25,7 +25,7 @@ import os.path
 import time
 from threading import Lock, RLock, Thread
 
-from downloaders import YoutubeDLDownloader
+from downloaders import YoutubeDLDownloader,HaoKanDownloader
 from parsers import OptionsParser
 from updatemanager import UpdateThread
 from utils import format_bytes, to_bytes, to_string,os_path_exists
@@ -366,7 +366,6 @@ class DownloadManager(Thread):
         log_lock = None if log_manager is None else Lock()
         wparams = (opt_manager, self._youtubedl_path(), log_manager, log_lock)
         self._workers = [Worker(*wparams) for _ in range(opt_manager.options["workers_number"])]
-
         self.start()
 
     @property
@@ -552,6 +551,7 @@ class Worker(Thread):
         self.log_lock = log_lock
 
         self._downloader = YoutubeDLDownloader(youtubedl, self._data_hook, self._log_data)
+        self._haokandownloader = HaoKanDownloader(self._data_hook,self._log_data)
         self._options_parser = OptionsParser()
         self._successful = 0
         self._running = True
@@ -581,7 +581,10 @@ class Worker(Thread):
         while self._running:
             if self._data['url'] is not None:
                 #options = self._options_parser.parse(self.opt_manager.options)
-                ret_code = self._downloader.download(self._data['url'], self._options)
+                if("haokan.baidu.com" in self._data['url']):
+                    ret_code = self._haokandownloader.download(self._data['url'], self._options)
+                else:
+                    ret_code = self._downloader.download(self._data['url'], self._options)
 
                 if (ret_code == YoutubeDLDownloader.OK or
                         ret_code == YoutubeDLDownloader.ALREADY or
