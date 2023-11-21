@@ -17,10 +17,12 @@ import queue
 import signal
 import subprocess
 import time
+import urllib.request
+import gzip
 from threading import Thread
 from time import sleep
-from urllib.parse import urlparse
-import requests
+from urllib.parse import parse_qs, urlencode, urlparse
+
 
 class PipeReader(Thread):
     """Helper class to avoid deadlocks when reading from subprocess pipes.
@@ -482,7 +484,7 @@ def extract_data(stdout):
         data_dictionary['status'] = 'Pre Processing'
 
     return data_dictionary
- 
+
 class HaoKanDownloader(object):
     '''文件下载器'''
     OK = 0
@@ -500,36 +502,79 @@ class HaoKanDownloader(object):
         self._return_code = self.OK
         self.url = None
  
-    def download(self,url, options):
+    def download(self,url, base_path):
         filename,url = self.get_video_info(url)
-        self.download_video(url,filename,options)
+        self.download_video(url,filename,base_path)
         return self._return_code
     
     def get_video_info(self,url):
         self.data['status'] = 'Pre Download'
         self._hook_data(self.data)
-        base_url = url
-        headers = {
-            "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
-        }
-        try:
-            response = requests.get(url=base_url, headers=headers, timeout=5)
-            if response.status_code == 200:    
-                html = response.text
-                start = html.find("window.__PRELOADED_STATE__ = ")
-                end = html.find("}};", start)
-                json_str = html[start+len("window.__PRELOADED_STATE__ = "):end+2]
-                json_data = json.loads(json_str)
-                title= json_data['curVideoMeta']['title']
-                videoInfo = json_data['curVideoMeta']['clarityUrl']
-                url = ''
-                for item in videoInfo:
-                    if item['key'] == 'sc':
-                        url = item['url']
-                return title,url
-        except Exception as e:
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+        vid = query_params.get('vid', [''])[0]
+
+        if vid is None:
+            self.data['status'] = 'Error'
+            self._hook_data(self.data)
             return '',''
-    def download_video(self,url,filename,options):
+
+        post_url = 'https://sv.baidu.com/haokan/api?tn=1008350o&ctn=1008350o&os=ios&cuid=E8019FD33EC4EBA7B853AF10A50A02D705F02DECEFMBGNNIETE&osbranch=i0&ua=640_1136_326&ut=iPhone5%2C4_10.3.3&net_type=-1&apiv=5.1.0.10&appv=1&version=5.1.0.10&life=1563337077&clife=1563337077&sids=&idfa=E3FC9054-384B-485F-9B4C-936F33D7D099&hid=9F5E84EAEEE51F4C190ACE7AABEB915F&young_mode=0&log=vhk&location=&cmd=video/detail'
+        
+        headers = {
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip, deflate",
+                'Charset': 'UTF-8',
+                "Accept-Language": "zh-Hans-CN;q=1",
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_3 like Mac OS X) AppleWebKit/603.3.8 (KHTML, like Gecko) Mobile/14G60 haokan/5.1.0.10 (Baidu; P2 10.3.3)/3.3.01_4,5enohP/381d/E7919FD33EC4EBA7B853AF10A50A02D705F02DECEFMBGNNIETE/1 HTTP/1.1",
+                # "XRAY-REQ-FUNC-ST-DNS": "okHttp;1562813246444;0",
+                # "XRAY-TRACEID": "5bd68916-4696-4bb3-b3a3-57a0c6a15949",
+                'Content-Type': 'application/x-www-form-urlencoded',
+                # 'Content-Length': '267',
+                'Host': 'sv.baidu.com',
+                'Connection': 'Keep-Alive',
+                "X-Bfe-Quic": "enable=1",
+                "Cookie": "BAIDUCUID=luBHiY8JSig3iHiZ0iSLi0O_v80Gi2iqlav6u_aCS8g1aH8H_iS9a0ivWu0dtQODzbXmA; BAIDUID=F2385E8E821854CA8BE4E30920EED52F:FG=1"
+        }
+        comment_getreplyDict = {'method': 'get',
+                                # 'url_key': '13089959609189000356&pn=1',
+                                'url_key': '%s&pn=1' % vid,
+                                'rn': '10',
+                                'child_rn': '2',
+                                'need_ainfo': '0',
+                                'type': '0',
+                                # 'vid': '13089959609189000356',
+                                'vid': vid,
+                                }
+        comment_getreplyEncodedStr = urlencode(comment_getreplyDict)
+        video_detailDict = {'method': 'get',
+                            # 'url_key': '13089959609189000356',
+                            'url_key': vid,
+                            'log_param_source': 'author',
+                            # 'vid': '13089959609189000356'
+                            'vid': vid,
+                            # "adparam": r"""{"screen_type":0,"pid":"","ac":"1","install_timestamp":"","ext":"[{\"k\":\"video_vid\",\"v\":\"%s\"},{\"k\":\"iad\",\"v\":\"327681\"}]","ver":"5.1.0.10","mod":"VIVO X20","ov":"6.0.1","baiduId":"A6DC59055E4FC518778A19436C23B49A:FG=1","fmt":"json","apna":"com.baidu.haokan","eid":"1957_2,2193_3,2230_4,2320_1,2326_2,2353_1,2359_3,2376_1,2391_1,2433_4,2436_5,2438_1,2442_1,2443_2,2452_1,2457_2,2470_1,2480_2,2511_1,2525_4,2529_1,2537_1,2538_1,2540_1,2555_2,2563_1,2565_2,2568_1,2574_1,2575_1,2577_1,2582_1","ot":"2","ct":"2","nt":"1","android_id":"7313ae71df9e5367","iad":327681,"ua":"810_1399_android_5.1.0.10_270","apinfo":"na_z_vOm8vLw8fDy8v-sqvLys_by8fX_9__18ff28fbhpKiq6aWmrqOy6a-mqKymqeH1__H18_P1__X-8P728v_HA_..%7Cqloc2","latitude":"39.911017","longitude":"116.413562","source":"videolanding"}"""
+                            }
+        video_detailEncodedStr = urlencode(video_detailDict)
+        post_data = {'comment/getreply': comment_getreplyEncodedStr,
+                     'video/detail': video_detailEncodedStr}
+
+        data = urlencode(post_data).encode('utf-8')
+        req = urllib.request.Request(post_url, data=data, method='POST',headers=headers)
+        response = urllib.request.urlopen(req)
+        get_page = response.read()
+        uncompressed_data = gzip.decompress(get_page).decode('utf-8')
+        try:
+            page_dict = json.loads(uncompressed_data)
+            videoD = page_dict['video/detail']['data']
+            download_url = videoD['video_list']['sc']
+            title = videoD['title']
+            return title,download_url
+        except Exception as e:
+            self._log(e)
+            return '',''
+
+    def download_video(self,url,filename,base_path):
         conn = None
         if(self.url == "" or filename == ""):
             self.data['status'] = 'Error'
@@ -551,7 +596,7 @@ class HaoKanDownloader(object):
             total_size = (int)(total_size)
             if total_size > 0:
                 finished_size = 0
-                file_path = options[3] % {'title': filename, 'ext': file_type[1]}
+                file_path = base_path + "\\" + filename + '.' + file_type[1]
                 start_time = time.perf_counter()
                 size = 0
                 file = open(file_path, 'wb')
@@ -564,12 +609,16 @@ class HaoKanDownloader(object):
                         if end_time - start_time > 1:
                             percent = '{0:.1f}%'.format(finished_size / total_size * 100)
                             speed = '{0:.1f}MB/s'.format(((finished_size - size) / (end_time - start_time))/1024/1024)
+                            self.data['filesize'] = '{0:.1f}MB'.format(finished_size / 1024/1024)
                             self.data['speed'] = speed
                             self.data['percent'] = percent
                             self._hook_data(self.data)
                             start_time = time.perf_counter()
                             size = finished_size
                         if finished_size >= total_size:
+                            self.data['filesize'] = '{0:.1f}MB'.format(finished_size / 1024/1024)
+                            self.data['percent'] = "100%"
+                            self._hook_data(self.data)
                             break
                     # ... end while statment
                     file.close()

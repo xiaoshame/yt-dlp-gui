@@ -580,9 +580,9 @@ class Worker(Thread):
     def run(self):
         while self._running:
             if self._data['url'] is not None:
-                #options = self._options_parser.parse(self.opt_manager.options)
+                
                 if("haokan.baidu.com" in self._data['url']):
-                    ret_code = self._haokandownloader.download(self._data['url'], self._options)
+                    ret_code = self._haokandownloader.download(self._data['url'], self.opt_manager.options["save_path"])
                 else:
                     ret_code = self._downloader.download(self._data['url'], self._options)
 
